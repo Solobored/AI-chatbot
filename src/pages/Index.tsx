@@ -214,20 +214,61 @@ export default function Index() {
     }
   };
 
+  const handleUpdateSessionName = async (sessionId: string, newName: string) => {
+    try {
+      await chatAPI.updateSessionName(sessionId, newName);
+      
+      // Update the session in our local state
+      setSessions(prev => prev.map(session => 
+        session.id === sessionId 
+          ? { ...session, name: newName, updated_at: new Date().toISOString() }
+          : session
+      ));
+      
+      toast.success('Session name updated successfully');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update session name';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      throw err; // Re-throw so the component can handle the error
+    }
+  };
+
   const handleDeleteSession = async (sessionId: string) => {
     try {
-      await chatAPI.deleteSession(sessionId);
+      const result = await chatAPI.deleteSession(sessionId);
+      
+      // Remove the session from our local state
       setSessions(prev => prev.filter(s => s.id !== sessionId));
       
-      // If we deleted the current session, switch to another one
+      // Handle session switching logic
       if (sessionId === currentSessionId) {
-        const remainingSessions = sessions.filter(s => s.id !== sessionId);
-        if (remainingSessions.length > 0) {
-          setCurrentSessionId(remainingSessions[0].id);
-          setCurrentMode(remainingSessions[0].mode);
-        } else {
-          setCurrentSessionId(null);
+        if (result.new_session_id) {
+          // A new default session was created
+          setCurrentSessionId(result.new_session_id);
+          setCurrentMode('general');
           setMessages([]);
+          // Add the new session to our state
+          const newSession: ChatSession = {
+            id: result.new_session_id,
+            name: result.new_session_name || 'Chat 1',
+            mode: 'general',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            is_special: false,
+            message_count: 0
+          };
+          setSessions([newSession]);
+        } else {
+          // Switch to another existing session
+          const remainingSessions = sessions.filter(s => s.id !== sessionId);
+          if (remainingSessions.length > 0) {
+            setCurrentSessionId(remainingSessions[0].id);
+            setCurrentMode(remainingSessions[0].mode);
+          } else {
+            setCurrentSessionId(null);
+            setMessages([]);
+          }
         }
       }
       
@@ -324,6 +365,7 @@ export default function Index() {
         onCreateQuickSession={handleCreateQuickSession}
         onCreateSpecialSession={handleCreateSpecialSession}
         onAnalyzeRequest={handleAnalyzeRequest}
+        onUpdateSessionName={handleUpdateSessionName}
         onDeleteSession={handleDeleteSession}
         onExportSession={handleExportSession}
       />
@@ -414,6 +456,8 @@ export default function Index() {
                       <div className="text-xs text-gray-500 space-y-1">
                         <p>💬 Click "New Chat" for quick general conversations</p>
                         <p>✨ Click "Special Request" for AI-powered mode selection</p>
+                        <p>✏️ Click on any session name to edit it</p>
+                        <p>🗑️ Delete any session, even if it's the only one</p>
                       </div>
                     </div>
                   )}

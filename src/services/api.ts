@@ -61,6 +61,18 @@ export interface AnalysisResult {
   mode_info: AIMode;
 }
 
+export interface DeleteSessionResponse {
+  message: string;
+  new_session_id?: string;
+  new_session_name?: string;
+}
+
+export interface UpdateSessionNameResponse {
+  message: string;
+  name: string;
+  updated_at: string;
+}
+
 export const chatAPI = {
   // Chat functionality
   sendMessage: async (message: string, sessionId?: string, mode: string = 'general', saveHistory: boolean = true): Promise<ChatResponse> => {
@@ -127,6 +139,20 @@ export const chatAPI = {
     }
   },
 
+  updateSessionName: async (sessionId: string, newName: string): Promise<UpdateSessionNameResponse> => {
+    try {
+      const response = await api.put<UpdateSessionNameResponse>(`/sessions/${sessionId}/name`, {
+        name: newName.trim(),
+      });
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.error || 'Failed to update session name');
+      }
+      throw new Error('An unexpected error occurred');
+    }
+  },
+
   analyzeRequest: async (description: string): Promise<AnalysisResult> => {
     try {
       const response = await api.post<AnalysisResult>('/analyze-request', {
@@ -141,9 +167,10 @@ export const chatAPI = {
     }
   },
 
-  deleteSession: async (sessionId: string): Promise<void> => {
+  deleteSession: async (sessionId: string): Promise<DeleteSessionResponse> => {
     try {
-      await api.delete(`/sessions/${sessionId}`);
+      const response = await api.delete<DeleteSessionResponse>(`/sessions/${sessionId}`);
+      return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
         throw new Error(error.response?.data?.error || 'Failed to delete session');
