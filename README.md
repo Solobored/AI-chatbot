@@ -2,6 +2,14 @@
 
 A completely local AI chatbot application that runs on your machine with full privacy. No external API calls, no data collection, and no cloud dependencies.
 
+## Team Quotes
+
+"The best way to predict the future is to invent it." — Alan Kay  
+Added by Josue Neiculeo  
+
+"Code is like humor. When you have to explain it, it’s bad." — Cory House
+Added by Critobal Baeriswyl 
+
 ## Features
 
 - 🔒 **Complete Privacy**: All processing happens locally on your machine
